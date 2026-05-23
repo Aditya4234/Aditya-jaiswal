@@ -4,10 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
 
 export default function CustomCursor() {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [clicked, setClicked] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
@@ -24,13 +24,13 @@ export default function CustomCursor() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
+    const touch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (touch) return;
+    setEnabled(true);
   }, []);
 
   useEffect(() => {
-    if (isTouchDevice || typeof window === "undefined") return;
-
-    document.body.style.cursor = "none";
+    if (!enabled) return;
 
     const moveCursor = (e: MouseEvent) => {
       cursorX.set(e.clientX - 16);
@@ -39,14 +39,15 @@ export default function CustomCursor() {
       dotY.set(e.clientY - 4);
     };
 
-    const onMouseEnter = () => setVisible(true);
-    const onMouseLeave = () => setVisible(false);
     const onMouseDown = () => setClicked(true);
     const onMouseUp = () => setClicked(false);
 
+    cursorX.set(window.innerWidth / 2 - 16);
+    cursorY.set(window.innerHeight / 2 - 16);
+    dotX.set(window.innerWidth / 2 - 4);
+    dotY.set(window.innerHeight / 2 - 4);
+
     window.addEventListener("mousemove", moveCursor);
-    window.addEventListener("mouseenter", onMouseEnter);
-    window.addEventListener("mouseleave", onMouseLeave);
     window.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mouseup", onMouseUp);
 
@@ -62,10 +63,7 @@ export default function CustomCursor() {
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      document.body.style.cursor = "";
       window.removeEventListener("mousemove", moveCursor);
-      window.removeEventListener("mouseenter", onMouseEnter);
-      window.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mouseup", onMouseUp);
       document.querySelectorAll("a, button, input, textarea, [role='button']").forEach((el) => {
@@ -74,9 +72,9 @@ export default function CustomCursor() {
       });
       observer.disconnect();
     };
-  }, [handleHoverStart, handleHoverEnd, isTouchDevice]);
+  }, [handleHoverStart, handleHoverEnd, enabled]);
 
-  if (isTouchDevice || typeof window === "undefined") return null;
+  if (!enabled) return null;
 
   return (
     <>
