@@ -7,6 +7,7 @@ export default function CustomCursor() {
   const [visible, setVisible] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
@@ -22,6 +23,15 @@ export default function CustomCursor() {
   const handleHoverEnd = useCallback(() => setHovered(false), []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  useEffect(() => {
+    if (isTouchDevice || typeof window === "undefined") return;
+
+    document.body.style.cursor = "none";
+
     const moveCursor = (e: MouseEvent) => {
       cursorX.set(e.clientX - 16);
       cursorY.set(e.clientY - 16);
@@ -52,6 +62,7 @@ export default function CustomCursor() {
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
+      document.body.style.cursor = "";
       window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("mouseenter", onMouseEnter);
       window.removeEventListener("mouseleave", onMouseLeave);
@@ -63,9 +74,9 @@ export default function CustomCursor() {
       });
       observer.disconnect();
     };
-  }, [handleHoverStart, handleHoverEnd]);
+  }, [handleHoverStart, handleHoverEnd, isTouchDevice]);
 
-  if (typeof window === "undefined") return null;
+  if (isTouchDevice || typeof window === "undefined") return null;
 
   return (
     <>
@@ -76,7 +87,7 @@ export default function CustomCursor() {
           opacity: visible ? 1 : 0,
           scale: hovered ? 1.5 : clicked ? 0.8 : 1,
         }}
-        className="fixed top-0 left-0 w-8 h-8 pointer-events-none z-[9999] rounded-full border border-purple-500/50 transition-all duration-150"
+        className="fixed top-0 left-0 w-8 h-8 pointer-events-none z-[9999] rounded-full border border-purple-500/50"
       />
       <motion.div
         style={{
